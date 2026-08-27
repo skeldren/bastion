@@ -1,0 +1,47 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@10.20.0 --activate
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Validate Compose
+        run: docker compose -f compose.example.yaml config
+
+      - name: Build hardened image
+        run: docker build --build-arg SKELDREN_BASTION_VERSION=verify -t skeldren-bastion:verify .
+
+      - name: Verify runtime user
+        run: test "$(docker image inspect skeldren-bastion:verify --format '{{.Config.User}}')" = "10001:10001"
+
+      - name: Secret scan
+        run: |
+          matches="$(grep -RInE --exclude-dir=.git --exclude-dir=node_modules '(_SECRET|TOKEN|PASSWORD|PRIVATE KEY)=.+[^[:space:]]' . || true)"
+          matches="$(printf '%s\n' "$matches" | grep -vE "=(\"\"|'')$" || true)"
+          test -z "$matches" || { printf '%s\n' "$matches"; exit 1; }

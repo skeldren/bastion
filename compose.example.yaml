@@ -1,0 +1,19 @@
+services:
+  skeldren-bastion:
+    image: ghcr.io/skeldren/bastion@sha256:REPLACE_WITH_SIGNED_IMAGE_DIGEST
+    restart: unless-stopped
+    environment:
+      SKELDREN_URL: https://dev.skeldren.com
+      SKELDREN_PAIRING_CODE: REPLACE-WITH-ONE-TIME-CODE
+    volumes:
+      - skeldren-bastion-data:/var/lib/skeldren-bastion
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  skeldren-bastion-data:

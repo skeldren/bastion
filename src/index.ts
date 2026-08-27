@@ -2,6 +2,7 @@ import { constants, generateKeyPairSync, privateDecrypt } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { nextReconnectDelayMs } from "./backoff.js";
+import { createJobResult } from "./job-result.js";
 import { isIP } from "node:net";
 import {
   broadcastAsaMessage,
@@ -116,7 +117,7 @@ async function executeJob(state: DeviceState, job: Job) {
   await request(`/api/bastion/jobs/${encodeURIComponent(job.id)}`, {
     method: "POST",
     headers: { ...deviceHeaders(state), "content-type": "application/json" },
-    body: JSON.stringify({ success, players, errorCode }),
+    body: JSON.stringify(createJobResult(success, players, errorCode)),
   });
 }
 

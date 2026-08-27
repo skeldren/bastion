@@ -19,6 +19,7 @@ test("keeps the Bastion runtime and container narrowly bounded", async () => {
   assert.match(runtime, /mode: 0o600/);
   assert.doesNotMatch(runtime, /exec\(|spawn\(|child_process|docker\.sock/i);
   assert.match(dockerfile, /USER 10001:10001/);
+  assert.match(dockerfile, /apk upgrade --no-cache libcrypto3 libssl3/);
   assert.match(dockerfile, /SKELDREN_BASTION_VERSION=/);
   assert.match(compose, /read_only: true/);
   assert.match(compose, /no-new-privileges:true/);

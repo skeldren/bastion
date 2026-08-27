@@ -15,6 +15,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate release channel
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          git fetch origin dev uat main
+          if [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-dev\.[0-9]+$ ]]; then
+            release_branch=origin/dev
+          elif [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+            release_branch=origin/uat
+          elif [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            release_branch=origin/main
+          else
+            echo "Unsupported release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          git merge-base --is-ancestor "$GITHUB_SHA" "$release_branch" || {
+            echo "$RELEASE_TAG is not reachable from $release_branch" >&2
+            exit 1
+          }
 
       - uses: actions/setup-node@v4
         with:

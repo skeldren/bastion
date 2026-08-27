@@ -56,6 +56,19 @@ docker build -t skeldren-bastion:local .
 Releases are built only from `v*` tags. The GitHub workflow publishes an SBOM
 and provenance, scans the immutable image, and signs its digest with Cosign.
 
+## Promotion branches
+
+Changes start on `dev`, are promoted to `uat`, and reach `main` only for a
+Production release. The matching immutable release tags are:
+
+- `vX.Y.Z-dev.N` from `dev`
+- `vX.Y.Z-rc.N` from `uat`
+- `vX.Y.Z` from `main`
+
+The release workflow verifies that each tag is reachable from its required
+branch. Environment deployments approve an exact digest; they never deploy a
+branch name or a mutable image tag.
+
 ## Security
 
 See [SECURITY.md](SECURITY.md). Never include pairing codes, device state,

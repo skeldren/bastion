@@ -32,5 +32,6 @@ test("keeps the Bastion runtime and container narrowly bounded", async () => {
   assert.match(release, /sbom: true/);
   assert.match(release, /provenance: mode=max/);
   assert.match(release, /cosign sign --yes/);
+  assert.match(release, /visibility=public/);
   assert.doesNotMatch(release, /:latest/);
 });

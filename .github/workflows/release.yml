@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*"
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,3 +75,13 @@ jobs:
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: echo "ghcr.io/${GITHUB_REPOSITORY}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
+
+  public-package:
+    needs: publish
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.publish.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep the GHCR package public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api --method PATCH "/orgs/${GITHUB_REPOSITORY_OWNER}/packages/container/${GITHUB_REPOSITORY#*/}" -f visibility=public

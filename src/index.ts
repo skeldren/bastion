@@ -125,6 +125,8 @@ function deviceHeaders(state: DeviceState) {
   return {
     authorization: `Bearer ${state.credential}`,
     "x-skeldren-bastion-id": state.id,
+    "x-skeldren-bastion-version":
+      process.env.SKELDREN_BASTION_VERSION ?? "dev",
   };
 }
 

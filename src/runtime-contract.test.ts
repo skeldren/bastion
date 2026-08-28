@@ -17,6 +17,8 @@ test("keeps the Bastion runtime and container narrowly bounded", async () => {
     /connection_test.*player_refresh.*broadcast.*save_world/s,
   );
   assert.match(runtime, /mode: 0o600/);
+  assert.match(runtime, /"x-skeldren-bastion-version"/);
+  assert.match(runtime, /SKELDREN_BASTION_VERSION/);
   assert.doesNotMatch(runtime, /exec\(|spawn\(|child_process|docker\.sock/i);
   assert.match(dockerfile, /USER 10001:10001/);
   assert.match(dockerfile, /apk upgrade --no-cache libcrypto3 libssl3/);

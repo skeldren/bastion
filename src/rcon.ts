@@ -4,6 +4,7 @@ const MAX_RESPONSE_BYTES = 256 * 1024;
 const AUTH_REQUEST_ID = 1;
 const COMMAND_REQUEST_ID = 2;
 const SENTINEL_REQUEST_ID = 3;
+const COMMAND_RESPONSE_IDLE_MS = 250;
 
 export type AsaRconInput = {
   address: string;
@@ -95,11 +96,13 @@ async function executeRcon(input: AsaRconInput, command?: string) {
     let authenticated = false;
     let settled = false;
     const output: string[] = [];
+    let responseIdleTimer: ReturnType<typeof setTimeout> | undefined;
 
     const finish = (error?: unknown, value = "") => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      if (responseIdleTimer) clearTimeout(responseIdleTimer);
       input.signal?.removeEventListener("abort", onAbort);
       socket.removeAllListeners();
       socket.destroy();
@@ -107,6 +110,13 @@ async function executeRcon(input: AsaRconInput, command?: string) {
       else if (error)
         reject(new AsaRconError("network_error", { cause: error }));
       else resolve(value);
+    };
+    const finishAfterResponseIdle = () => {
+      if (responseIdleTimer) clearTimeout(responseIdleTimer);
+      responseIdleTimer = setTimeout(
+        () => finish(undefined, output.join("")),
+        Math.min(COMMAND_RESPONSE_IDLE_MS, timeoutMs),
+      );
     };
     const onAbort = () => finish(new AsaRconError("aborted"));
     const timer = setTimeout(
@@ -143,7 +153,10 @@ async function executeRcon(input: AsaRconInput, command?: string) {
             continue;
           }
           if (packet.type !== 0) continue;
-          if (packet.id === COMMAND_REQUEST_ID) output.push(packet.body);
+          if (packet.id === COMMAND_REQUEST_ID) {
+            output.push(packet.body);
+            finishAfterResponseIdle();
+          }
           if (packet.id === SENTINEL_REQUEST_ID) {
             finish(undefined, output.join(""));
             return;

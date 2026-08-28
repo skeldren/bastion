@@ -101,7 +101,7 @@ async function executeJob(state: DeviceState, job: Job) {
       address: validateTarget(job.targetHost),
       port: validatePort(job.port),
       password: decryptPassword(state.privateKeyPem, job.passwordCiphertext),
-      timeoutMs: 3_000,
+      timeoutMs: job.type === "connection_test" ? 3_000 : 10_000,
     };
     if (job.type === "connection_test") await checkAsaRcon(input);
     else if (job.type === "player_refresh")

@@ -141,6 +141,57 @@ test("authenticates once and joins a multi-packet ListPlayers response", async (
   }
 });
 
+test("accepts an ASA command response when the sentinel is not echoed", async () => {
+  const server = createServer((socket) => {
+    let buffer = Buffer.alloc(0);
+    socket.on("data", (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
+      const parsed = asaRconPacketFixture.parsePackets(buffer);
+      buffer = parsed.rest;
+      for (const packet of parsed.packets) {
+        if (packet.type === 3) {
+          socket.write(asaRconPacketFixture.encodePacket(packet.id, 2, ""));
+        } else if (packet.id === 2) {
+          socket.write(
+            asaRconPacketFixture.encodePacket(
+              packet.id,
+              0,
+              "0. Survivor One, 76561190000000001\n",
+            ),
+          );
+          setTimeout(
+            () =>
+              socket.write(
+                asaRconPacketFixture.encodePacket(
+                  packet.id,
+                  0,
+                  "1. Survivor Two, 76561190000000002",
+                ),
+              ),
+            25,
+          );
+        }
+      }
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  assert(address && typeof address === "object");
+  try {
+    assert.equal(
+      await queryAsaPlayerCount({
+        address: "127.0.0.1",
+        port: address.port,
+        password: "secret",
+        timeoutMs: 1_000,
+      }),
+      2,
+    );
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
 test("rejects authentication failure and does not retry", async () => {
   let connections = 0;
   const server = createServer((socket) => {
